@@ -1,11 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
 fastapi
 uvicorn
 python-multipart
 cryptography
 numpy
 opencv-python-headless
-torch
-torchvision
-easyocr
 scikit-image
 pillow
+easyocr

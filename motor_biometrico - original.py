@@ -3,22 +3,28 @@ import numpy as np
 import cv2
 import torch
 import torchvision.transforms as T
+from torchvision.models import resnet18, ResNet18_Weights
 from cryptography.fernet import Fernet
+import easyocr
+
+# Importación de los nuevos submódulos especializados
+from megadescriptor_model import MegaDescriptorWrapper
+from traditional_features import TraditionalMuzzleExtractor
+from spoof_model import SpoofDetectorWrapper
 
 
 class CattleBiometricEngine:
     def __init__(self, encryption_key: bytes = None):
-        # Desactivar gradientes globalmente para reducir consumo de RAM
-        torch.set_grad_enabled(False)
 
-        # Referencias nulas para carga bajo demanda (Lazy Loading)
-        self.ocr_reader = None
-        self.feature_extractor = None
-        self.mega_descriptor = None
-        self.texture_extractor = None
-        self.spoof_detector = None
+        # 1. Inicializar OCR para lectura de caravana
+        self.ocr_reader = easyocr.Reader(['en', 'es'], gpu=torch.cuda.is_available())
 
-        # Transformación para PyTorch
+        # 2. Inicializar modelo para Embeddings (ResNet18 Base)
+        weights = ResNet18_Weights.DEFAULT
+        self.feature_extractor = resnet18(weights=weights)
+        self.feature_extractor.fc = torch.nn.Identity()
+        self.feature_extractor.eval()
+
         self.transform = T.Compose([
             T.ToPILImage(),
             T.Resize((224, 224)),
@@ -26,49 +32,17 @@ class CattleBiometricEngine:
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-        # Configuración de Cifrado AES (Fernet)
+        # 3. Submódulos Especializados (Deep, Textura LBP/HOG y Anti-Spoofing)
+        self.mega_descriptor = MegaDescriptorWrapper()
+        self.texture_extractor = TraditionalMuzzleExtractor()
+        self.spoof_detector = SpoofDetectorWrapper()
+
+        # 4. Configuración de Cifrado AES (Fernet)
         if encryption_key is None:
             self.cipher_key = Fernet.generate_key()
         else:
             self.cipher_key = encryption_key
         self.cipher = Fernet(self.cipher_key)
-
-    # ==========================================
-    # PROPIDATIVE / LAZY LOADERS (Ahorro de RAM)
-    # ==========================================
-    def _get_ocr(self):
-        if self.ocr_reader is None:
-            import easyocr
-            self.ocr_reader = easyocr.Reader(['en'], gpu=False, download_enabled=True)
-        return self.ocr_reader
-
-    def _get_feature_extractor(self):
-        if self.feature_extractor is None:
-            from torchvision.models import resnet18, ResNet18_Weights
-            weights = ResNet18_Weights.DEFAULT
-            model = resnet18(weights=weights)
-            model.fc = torch.nn.Identity()
-            model.eval()
-            self.feature_extractor = model
-        return self.feature_extractor
-
-    def _get_mega_descriptor(self):
-        if self.mega_descriptor is None:
-            from megadescriptor_model import MegaDescriptorWrapper
-            self.mega_descriptor = MegaDescriptorWrapper()
-        return self.mega_descriptor
-
-    def _get_texture_extractor(self):
-        if self.texture_extractor is None:
-            from traditional_features import TraditionalMuzzleExtractor
-            self.texture_extractor = TraditionalMuzzleExtractor()
-        return self.texture_extractor
-
-    def _get_spoof_detector(self):
-        if self.spoof_detector is None:
-            from spoof_model import SpoofDetectorWrapper
-            self.spoof_detector = SpoofDetectorWrapper()
-        return self.spoof_detector
 
     # ==========================================
     # 0. RECORTE DE ZONA NASAL (MUZZLE ROI CROP)
@@ -82,7 +56,7 @@ class CattleBiometricEngine:
         # Recorte estratégico enfocado en la región nasolabial
         y_start, y_end = int(h * 0.35), int(h * 0.85)
         x_start, x_end = int(w * 0.20), int(w * 0.80)
-
+        
         muzzle_roi = img_bgr[y_start:y_end, x_start:x_end]
         return muzzle_roi if muzzle_roi.size > 0 else img_bgr
 
@@ -111,7 +85,7 @@ class CattleBiometricEngine:
         enhanced = clahe.apply(gray)
 
         # 4. Filtro de Gabor para alineación de surcos/crestas
-        kernel = cv2.getGaborKernel((21, 21), 5.0, np.pi / 4, 10.0, 0.5, 0, ktype=cv2.CV_32F)
+        kernel = cv2.getGaborKernel((21, 21), 5.0, np.pi/4, 10.0, 0.5, 0, ktype=cv2.CV_32F)
         filtered = cv2.filter2D(enhanced, cv2.CV_8UC3, kernel)
 
         return filtered
@@ -124,24 +98,21 @@ class CattleBiometricEngine:
         Convierte el morro preprocesado en un vector denso combinado:
         Embedding Profundo (ResNet18/Siamesa) + Textura Micro (LBP + HOG).
         """
-        extractor = self._get_feature_extractor()
-        texture_ext = self._get_texture_extractor()
-
         # Vector Deep (ResNet18)
         img_rgb = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
         tensor_img = self.transform(img_rgb).unsqueeze(0)
 
         with torch.no_grad():
-            deep_embedding = extractor(tensor_img).numpy().squeeze()
-
+            deep_embedding = self.feature_extractor(tensor_img).numpy().squeeze()
+        
         deep_norm = deep_embedding / (np.linalg.norm(deep_embedding) + 1e-10)
 
         # Vector de Textura Tradicional (LBP + HOG)
-        texture_vector = texture_ext.extract_combined_vector(img_rgb)
+        texture_vector = self.texture_extractor.extract_combined_vector(img_rgb)
 
         # Combinación de características
         hybrid_vector = np.hstack([deep_norm, texture_vector])
-
+        
         # Normalización L2 final
         final_norm = hybrid_vector / (np.linalg.norm(hybrid_vector) + 1e-10)
         return final_norm.astype(np.float32)
@@ -157,10 +128,9 @@ class CattleBiometricEngine:
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img is None:
             return {"is_live_animal": False, "confidence_real": 0.0}
-
+            
         muzzle_crop = self.crop_muzzle_roi(img)
-        spoof_det = self._get_spoof_detector()
-        return spoof_det.check_spoofing(muzzle_crop)
+        return self.spoof_detector.check_spoofing(muzzle_crop)
 
     # ==========================================
     # 3. ENCRIPTACIÓN DEL MORRO Y PATRÓN
@@ -190,8 +160,7 @@ class CattleBiometricEngine:
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img is None:
             return ""
-
-        ocr = self._get_ocr()
-        results = ocr.readtext(img, detail=0)
+        
+        results = self.ocr_reader.readtext(img, detail=0)
         extracted_text = "".join(results).replace(" ", "").upper()
         return extracted_text
