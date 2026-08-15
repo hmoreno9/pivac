@@ -117,6 +117,52 @@
         .match-card h3 { margin-top: 0; margin-bottom: 8px; font-size: 16px; }
         .match-card ul { list-style: none; padding: 0; margin: 0; font-size: 13px; }
         .match-card li { margin-bottom: 4px; }
+            .dni-card {
+        background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 50%, #e3f2fd 100%);
+        border: 2px solid #0288d1;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        position: relative;
+        overflow: hidden;
+    }
+    .dni-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #757575;
+        padding-bottom: 6px;
+        margin-bottom: 10px;
+    }
+    .dni-header h4 { margin: 0; color: #0277bd; font-size: 14px; text-transform: uppercase; }
+    .dni-header span { font-size: 11px; font-weight: bold; color: #555; }
+    
+    .dni-body {
+        display: flex;
+        gap: 12px;
+    }
+    .dni-photos {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .dni-thumb {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #0288d1;
+        background: #eee;
+    }
+    .dni-details {
+        flex: 1;
+        font-size: 12px;
+    }
+    .dni-field { margin-bottom: 4px; }
+    .dni-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 10px; display: block; }
+    .dni-val { font-weight: bold; color: #111; font-size: 13px; }
+    .dni-id-bio { font-family: monospace; font-size: 10px; color: #0277bd; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -150,6 +196,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('enrolar')">Enrolar</button>
             <button class="tab-btn" onclick="switchTab('identificar')">Identificar</button>
+            <button class="tab-btn" onclick="switchTab('registrados')">Registrados</button>
         </div>
 
         <!-- TAB ENROLAR -->
@@ -189,6 +236,11 @@
                 </div>
                 <button type="submit" id="btnIdentify" class="action-btn" style="background-color: var(--accent);">Buscar Coincidencia</button>
             </form>
+        </div>
+
+       <!-- TAB DNI REGISTRADOS-->
+        <div id="tab-registrados" class="tab-content">
+            <div id="dniListContainer">Cargando DNI Bovinos...</div>
         </div>
 
         <div id="matchCard" class="match-card"></div>
@@ -270,90 +322,170 @@
         if (name === 'enrolar') {
             document.querySelectorAll('.tab-btn')[0].classList.add('active');
             document.getElementById('tab-enrolar').classList.add('active');
-        } else {
+        } 
+        else if (name === 'identificar'){
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
             document.getElementById('tab-identificar').classList.add('active');
+        }
+        else {
+            document.querySelectorAll('.tab-btn')[2].classList.add('active');
+            document.getElementById('tab-registrados').classList.add('active');
+            // ¡ESTA LÍNEA ES CLAVE! Llama a la API cuando cambiamos a la solapa
+            loadRegisteredDNI(); 
         }
     }
 
     // ENROLAR
-    document.getElementById('enrollForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('btnEnroll');
-        const matchCard = document.getElementById('matchCard');
-        btn.disabled = true;
-        btn.innerText = "Procesando Biometría...";
-        matchCard.style.display = 'none';
+document.getElementById('enrollForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnEnroll');
+    const matchCard = document.getElementById('matchCard');
+    btn.disabled = true;
+    btn.innerText = "Procesando Biometría y OCR...";
+    matchCard.style.display = 'none';
 
-        const formData = new FormData();
-        formData.append('establecimiento_id', document.getElementById('establecimiento_id').value);
-        formData.append('id_vacuno', document.getElementById('id_vacuno').value);
-        formData.append('latitude', currentLat);
-        formData.append('longitude', currentLon);
-        formData.append('foto_morro', document.getElementById('foto_morro_enroll').files[0]);
-        formData.append('foto_caravana', document.getElementById('foto_caravana_enroll').files[0]);
+    const formData = new FormData();
+    formData.append('establecimiento_id', document.getElementById('establecimiento_id').value);
+    formData.append('id_vacuno', document.getElementById('id_vacuno').value);
+    formData.append('latitude', currentLat);
+    formData.append('longitude', currentLon);
+    formData.append('foto_morro', document.getElementById('foto_morro_enroll').files[0]);
+    formData.append('foto_caravana', document.getElementById('foto_caravana_enroll').files[0]);
 
-        try {
-            const res = await fetch('/api/v1/enrolar', { method: 'POST', body: formData });
-            const data = await res.json();
+    try {
+        const res = await fetch('/api/v1/enrolar', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (res.ok) {
+            // Lectura defensiva para prevenir "undefined"
+            const vacunoID = data.id_vacuno || data.id_vacuno_interno || "N/A";
+            const caravana = data.caravana_ocr || data.numero_caravana || "No detectada";
 
             matchCard.className = "match-card success";
             matchCard.innerHTML = `
                 <h3>✅ Enrolamiento Exitoso</h3>
                 <ul>
-                    <li><b>ID Interno:</b> ${data.id_vacuno}</li>
-                    <li><b>Caravana OCR:</b> ${data.caravana_ocr || 'No detectada'}</li>
+                    <li><b>ID Vacuno:</b> ${vacunoID}</li>
+                    <li><b>Caravana OCR:</b> ${caravana}</li>
+                    <li><b>ID Biométrico:</b> ${data.id_biometrico || 'Guardado'}</li>
                 </ul>
             `;
             matchCard.style.display = 'block';
-        } catch (err) {
-            alert("Error al enrolar.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Guardar Enrolamiento";
+        } else {
+            alert(data.detail || "Error en el enrolamiento.");
         }
-    });
+    } catch (err) {
+        alert("Error de conexión con la API PIVAC.");
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Guardar Enrolamiento";
+    }
+});
+
 
     // IDENTIFICAR
-    document.getElementById('identifyForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('btnIdentify');
-        const matchCard = document.getElementById('matchCard');
-        btn.disabled = true;
-        btn.innerText = "Analizando vector...";
-        matchCard.style.display = 'none';
+document.getElementById('identifyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnIdentify');
+    const matchCard = document.getElementById('matchCard');
+    btn.disabled = true;
+    btn.innerText = "Analizando patrón biométrico...";
+    matchCard.style.display = 'none';
 
-        const formData = new FormData();
-        formData.append('foto_morro', document.getElementById('foto_morro_identify').files[0]);
-        formData.append('umbral_similitud', document.getElementById('umbral_similitud').value);
+    const formData = new FormData();
+    formData.append('foto_morro', document.getElementById('foto_morro_identify').files[0]);
+    formData.append('umbral_similitud', document.getElementById('umbral_similitud').value);
 
-        try {
-            const res = await fetch('/api/v1/identificar', { method: 'POST', body: formData });
-            const data = await res.json();
+    try {
+        const res = await fetch('/api/v1/identificar', { method: 'POST', body: formData });
+        const data = await res.json();
 
+        if (res.ok) {
             if (data.status === 'coincidencia_encontrada') {
                 const v = data.vacuno;
                 matchCard.className = "match-card success";
                 matchCard.innerHTML = `
-                    <h3>🎯 Coincidencia (${data.similitud_porcentaje}%)</h3>
+                    <h3>🎯 Coincidencia Encontrada (${data.similitud_porcentaje}%)</h3>
                     <ul>
-                        <li><b>ID Vacuno:</b> ${v.id_vacuno_interno}</li>
+                        <li><b>ID Vacuno:</b> ${v.id_vacuno_interno || v.id}</li>
                         <li><b>Establecimiento:</b> ${v.establecimiento_id}</li>
-                        <li><b>Caravana:</b> ${v.numero_caravana || 'N/A'}</li>
+                        <li><b>Número Caravana:</b> ${v.numero_caravana || 'Sin registrar'}</li>
+                        <li><b>Fecha Registro:</b> ${new Date(v.fecha_registro).toLocaleDateString()}</li>
                     </ul>
                 `;
             } else {
+                // Captura defensiva de mensaje
+                const msg = data.message || `Máxima similitud hallada: ${data.similitud_maxima || 0}% (Umbral: ${data.umbral_exigido || 85}%)`;
                 matchCard.className = "match-card no-match";
-                matchCard.innerHTML = `<h3>❌ Sin Coincidencia</h3><p>${data.message}</p>`;
+                matchCard.innerHTML = `
+                    <h3>❌ Sin Coincidencia</h3>
+                    <p style="margin: 6px 0; font-size: 13px;">${msg}</p>
+                `;
             }
             matchCard.style.display = 'block';
-        } catch (err) {
-            alert("Error en la búsqueda.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Buscar Coincidencia";
+        } else {
+            alert(data.detail || "Error en el servidor al procesar la imagen.");
         }
-    });
+    } catch (err) {
+        alert("Error de conexión al intentar identificar.");
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Buscar Coincidencia";
+    }
+});
+
+    
+async function loadRegisteredDNI() {
+        const container = document.getElementById('dniListContainer');
+        container.innerHTML = "Cargando registros...";
+
+        try {
+            const res = await fetch('/api/v1/registrados');
+            const data = await res.json();
+
+            if (!data.bovinos || data.bovinos.length === 0) {
+                container.innerHTML = "<p style='text-align:center;'>No hay bovinos registrados aún.</p>";
+                return;
+            }
+
+            container.innerHTML = data.bovinos.map(b => `
+                <div class="dni-card">
+                    <div class="dni-header">
+                        <h4>🇦🇷 REPÚBLICA ARGENTINA - PIVAC</h4>
+                        <span>DNI BOVINO</span>
+                    </div>
+                    <div class="dni-body">
+                        <div class="dni-photos">
+                            <img src="${b.foto_morro_b64 || '/static/placeholder.jpg'}" class="dni-thumb" title="Huella Nasal (Morro)">
+                            <img src="${b.foto_cara_b64 || '/static/placeholder.jpg'}" class="dni-thumb" title="Rostro / Caravana">
+                        </div>
+                        <div class="dni-details">
+                            <div class="dni-field">
+                                <span class="dni-label">ID Vacuno / Caravana</span>
+                                <span class="dni-val">VAC: ${b.id_vacuno_interno} | CARAVANA: ${b.numero_caravana || 'S/N'}</span>
+                            </div>
+                            <div class="dni-field">
+                                <span class="dni-label">Raza</span>
+                                <span class="dni-val">${b.raza || 'Angus'}</span>
+                            </div>
+                            <div class="dni-field">
+                                <span class="dni-label">Establecimiento</span>
+                                <span class="dni-val">${b.establecimiento_nombre || 'Estancia Las Sierras'}</span>
+                            </div>
+                            <div class="dni-field">
+                                <span class="dni-label">ID Biométrico (UUID)</span>
+                                <span class="dni-id-bio">${b.id_biometrico}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            container.innerHTML = "<p>Error al cargar el listado de DNI Bovinos.</p>";
+        }
+    }
 </script>
 
 </body>
