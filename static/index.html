@@ -5,6 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PIVAC - Identificación Vacuna</title>
     <style>
+        .dni-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 50%, #e3f2fd 100%);
+            border: 2px solid #0288d1;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dni-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #757575;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+        .dni-header h4 { margin: 0; color: #0277bd; font-size: 14px; text-transform: uppercase; }
+        .dni-header span { font-size: 11px; font-weight: bold; color: #555; }
+
+        .dni-body {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .dni-photos-left {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .dni-thumb-left {
+            width: 75px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #0288d1;
+            background: #eee;
+        }
+
+        .dni-details {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .dni-field { margin-bottom: 4px; }
+        .dni-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 10px; display: block; }
+        .dni-val { font-weight: bold; color: #111; font-size: 13px; }
+        .dni-id-bio { font-family: monospace; font-size: 10px; color: #0277bd; word-break: break-all; }
+
+        .dni-morros-footer {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #0288d1;
+        }
+
+        .dni-morros-label {
+            font-weight: bold;
+            color: #0277bd;
+            font-size: 10px;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .dni-morros-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .dni-morro-apaisado {
+            height: 90px;
+            min-width: 110px;
+            max-width: 180px;
+            object-fit: contain;
+            background: #000;
+            border-radius: 6px;
+            border: 1px solid #2e7d32;
+        }
+        
         :root {
             --primary: #2e7d32;
             --primary-dark: #1b5e20;
@@ -20,7 +105,7 @@
             color: #333;
         }
         .container {
-            max-width: 480px;
+            max-width: 520px;
             margin: 0 auto;
             background: var(--card-bg);
             padding: 18px;
@@ -28,14 +113,28 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 12px; }
-        
         .hidden { display: none !important; }
+        
+        .btn-delete-dni {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
-        /* Login Box */
+        .btn-delete-dni:hover {
+            background-color: #c62828;
+            color: #ffffff;
+        }
+
         .login-box { padding: 10px 0; }
         .login-box h3 { text-align: center; color: #555; margin-bottom: 20px; }
 
-        /* Tabs */
         .tabs {
             display: flex;
             border-bottom: 2px solid #e0e0e0;
@@ -62,13 +161,14 @@
 
         .form-group { margin-bottom: 14px; }
         label { font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px; }
-        input[type="text"], input[type="password"], input[type="file"], input[type="number"] {
+        input[type="text"], input[type="password"], input[type="file"], input[type="number"], select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 14px;
+            background-color: #fff;
         }
         .geo-box {
             background: #e8f5e9;
@@ -92,7 +192,6 @@
         }
         button.action-btn:disabled { background-color: #a5d6a7; }
 
-        /* User Header */
         .user-bar {
             display: flex;
             justify-content: space-between;
@@ -105,7 +204,6 @@
         }
         .logout-link { color: #c62828; text-decoration: underline; cursor: pointer; font-weight: bold; }
 
-        /* Result Cards */
         .match-card {
             margin-top: 16px;
             padding: 14px;
@@ -115,54 +213,6 @@
         .match-card.success { background-color: #e8f5e9; border: 2px solid #2e7d32; color: #1b5e20; }
         .match-card.no-match { background-color: #ffebee; border: 2px solid #c62828; color: #b71c1c; }
         .match-card h3 { margin-top: 0; margin-bottom: 8px; font-size: 16px; }
-        .match-card ul { list-style: none; padding: 0; margin: 0; font-size: 13px; }
-        .match-card li { margin-bottom: 4px; }
-            .dni-card {
-        background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 50%, #e3f2fd 100%);
-        border: 2px solid #0288d1;
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-        position: relative;
-        overflow: hidden;
-    }
-    .dni-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #757575;
-        padding-bottom: 6px;
-        margin-bottom: 10px;
-    }
-    .dni-header h4 { margin: 0; color: #0277bd; font-size: 14px; text-transform: uppercase; }
-    .dni-header span { font-size: 11px; font-weight: bold; color: #555; }
-    
-    .dni-body {
-        display: flex;
-        gap: 12px;
-    }
-    .dni-photos {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .dni-thumb {
-        width: 80px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid #0288d1;
-        background: #eee;
-    }
-    .dni-details {
-        flex: 1;
-        font-size: 12px;
-    }
-    .dni-field { margin-bottom: 4px; }
-    .dni-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 10px; display: block; }
-    .dni-val { font-weight: bold; color: #111; font-size: 13px; }
-    .dni-id-bio { font-family: monospace; font-size: 10px; color: #0277bd; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -203,16 +253,29 @@
         <div id="tab-enrolar" class="tab-content active">
             <form id="enrollForm">
                 <div class="form-group">
-                    <label for="establecimiento_id">ID Establecimiento / Campo:</label>
-                    <input type="text" id="establecimiento_id" value="EST-TANDIL-01" required>
+                    <label for="establecimiento_id">Establecimiento / Campo:</label>
+                    <select id="establecimiento_id" onchange="suggestNextVacunoID()" required>
+                        <option value="EST-TANDIL-01">Estancia Las Sierras (EST-TANDIL-01)</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="id_vacuno">ID Vacuno Interno:</label>
                     <input type="text" id="id_vacuno" value="VAC-2026-001" required>
                 </div>
                 <div class="form-group">
-                    <label for="foto_morro_enroll">Foto de Morro (Patrón):</label>
-                    <input type="file" id="foto_morro_enroll" accept="image/*" capture="environment" required>
+                    <label for="raza">Raza:</label>
+                    <select id="raza" required>
+                        <option value="Angus">Angus</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fotos_morro_enroll">Fotos del Morro (3 tomas):</label>
+                    <input type="file" id="fotos_morro_enroll" accept="image/*" multiple required>
+                    <small style="color:#666; font-size:11px;">Mantené presionado para elegir las 3 mejores tomas.</small>
+                </div>
+                <div class="form-group">
+                    <label for="foto_vaca_enroll">Foto de la Vaca (Cuerpo/Rostro):</label>
+                    <input type="file" id="foto_vaca_enroll" accept="image/*" capture="environment" required>
                 </div>
                 <div class="form-group">
                     <label for="foto_caravana_enroll">Foto de Caravana (OCR):</label>
@@ -238,7 +301,7 @@
             </form>
         </div>
 
-       <!-- TAB DNI REGISTRADOS-->
+        <!-- TAB REGISTRADOS -->
         <div id="tab-registrados" class="tab-content">
             <div id="dniListContainer">Cargando DNI Bovinos...</div>
         </div>
@@ -250,8 +313,8 @@
 <script>
     let currentLat = 0.0;
     let currentLon = 0.0;
+    const PLACEHOLDER_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%23e0e0e0'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='10' fill='%23757575'>Sin Imagen</text></svg>";
 
-    // Verificar Sesión al cargar
     document.addEventListener("DOMContentLoaded", () => {
         const user = localStorage.getItem("pivac_user");
         if (user) {
@@ -272,6 +335,53 @@
                     document.getElementById('geoStatus').innerText = "⚠️ GPS no disponible. (0.0, 0.0)";
                 }
             );
+        }
+    }
+
+    function sanitizeB64(src) {
+        if (!src || src === 'undefined' || src === 'null') return PLACEHOLDER_SVG;
+        let str = typeof src === 'string' ? src : JSON.stringify(src);
+        str = str.replace(/\\"/g, '"').replace(/^\[?"?/, '').replace(/"?\]?$/, '').replace(/^["']|["']$/g, '').trim();
+        if (str.length < 50) return PLACEHOLDER_SVG;
+        if (!str.startsWith('data:image')) {
+            return `data:image/jpeg;base64,${str}`;
+        }
+        return str;
+    }
+
+    function showApp(user) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        document.getElementById('userDisplayName').innerText = user.nombre_operador || user.username;
+        
+        // Cargar listas dependientes de la API una vez que la App es visible
+        loadEstablecimientos();
+        loadRazas();
+    }
+
+    function logout() {
+        localStorage.removeItem("pivac_user");
+        location.reload();
+    }
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('matchCard').style.display = 'none';
+
+        if (name === 'enrolar') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('tab-enrolar').classList.add('active');
+            suggestNextVacunoID();
+        } 
+        else if (name === 'identificar'){
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('tab-identificar').classList.add('active');
+        }
+        else if (name === 'registrados'){
+            document.querySelectorAll('.tab-btn')[2].classList.add('active');
+            document.getElementById('tab-registrados').classList.add('active');
+            loadRegisteredDNI();
         }
     }
 
@@ -303,187 +413,340 @@
         }
     });
 
-    function showApp(user) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('appSection').classList.remove('hidden');
-        document.getElementById('userDisplayName').innerText = user.nombre_operador || user.username;
+    // CARGAR ESTABLECIMIENTOS
+    async function loadEstablecimientos() {
+        const select = document.getElementById('establecimiento_id');
+        try {
+            const res = await fetch('/api/v1/establecimientos');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.establecimientos && data.establecimientos.length > 0) {
+                    select.innerHTML = data.establecimientos.map(e => 
+                        `<option value="${e.id}">${e.nombre} (${e.id})</option>`
+                    ).join('');
+                    suggestNextVacunoID();
+                }
+            }
+        } catch (err) {
+            console.warn("No se pudieron cargar establecimientos desde el servidor:", err);
+        }
     }
 
-    function logout() {
-        localStorage.removeItem("pivac_user");
-        location.reload();
+    // CARGAR RAZAS
+    async function loadRazas() {
+        const selectRaza = document.getElementById('raza');
+        const defaultRazas = ["Angus", "Hereford", "Brahman", "Brangus", "Braford", "Limousin", "Criollo"];
+        try {
+            const res = await fetch('/api/v1/razas');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.razas && data.razas.length > 0) {
+                    selectRaza.innerHTML = data.razas.map(r => 
+                        `<option value="${r.nombre}">${r.nombre}</option>`
+                    ).join('');
+                    return;
+                }
+            }
+        } catch (err) {
+            console.warn("Cargando razas por defecto:", err);
+        }
+        selectRaza.innerHTML = defaultRazas.map(r => `<option value="${r}">${r}</option>`).join('');
     }
 
-    function switchTab(name) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('matchCard').style.display = 'none';
+    // SUGERIR SIGUIENTE ID DE VACUNO
+    async function suggestNextVacunoID() {
+        const selectEst = document.getElementById('establecimiento_id');
+        const inputID = document.getElementById('id_vacuno');
+        const estID = selectEst.value || 'EST-TANDIL-01';
 
-        if (name === 'enrolar') {
-            document.querySelectorAll('.tab-btn')[0].classList.add('active');
-            document.getElementById('tab-enrolar').classList.add('active');
-        } 
-        else if (name === 'identificar'){
-            document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            document.getElementById('tab-identificar').classList.add('active');
+        try {
+            const res = await fetch(`/api/v1/ultimo-vacuno?establecimiento_id=${encodeURIComponent(estID)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.ultimo_id) {
+                    inputID.value = incrementVacunoID(data.ultimo_id);
+                    return;
+                }
+            }
+        } catch (err) {
+            console.warn("Error consultando ultimo id:", err);
         }
-        else {
-            document.querySelectorAll('.tab-btn')[2].classList.add('active');
-            document.getElementById('tab-registrados').classList.add('active');
-            // ¡ESTA LÍNEA ES CLAVE! Llama a la API cuando cambiamos a la solapa
-            loadRegisteredDNI(); 
-        }
+        inputID.value = `${estID.replace('EST-', 'VAC-')}-001`;
+    }
+
+    function incrementVacunoID(lastID) {
+        const match = lastID.match(/(.*?)(\d+)$/);
+        if (!match) return `${lastID}-001`;
+        
+        const prefix = match[1];
+        const numberStr = match[2];
+        const nextNumber = parseInt(numberStr, 10) + 1;
+        const paddedNumber = String(nextNumber).padStart(numberStr.length, '0');
+        
+        return `${prefix}${paddedNumber}`;
     }
 
     // ENROLAR
-document.getElementById('enrollForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnEnroll');
-    const matchCard = document.getElementById('matchCard');
-    btn.disabled = true;
-    btn.innerText = "Procesando Biometría y OCR...";
-    matchCard.style.display = 'none';
-
-    const formData = new FormData();
-    formData.append('establecimiento_id', document.getElementById('establecimiento_id').value);
-    formData.append('id_vacuno', document.getElementById('id_vacuno').value);
-    formData.append('latitude', currentLat);
-    formData.append('longitude', currentLon);
-    formData.append('foto_morro', document.getElementById('foto_morro_enroll').files[0]);
-    formData.append('foto_caravana', document.getElementById('foto_caravana_enroll').files[0]);
-
-    try {
-        const res = await fetch('/api/v1/enrolar', { method: 'POST', body: formData });
-        const data = await res.json();
-
-        if (res.ok) {
-            // Lectura defensiva para prevenir "undefined"
-            const vacunoID = data.id_vacuno || data.id_vacuno_interno || "N/A";
-            const caravana = data.caravana_ocr || data.numero_caravana || "No detectada";
-
-            matchCard.className = "match-card success";
-            matchCard.innerHTML = `
-                <h3>✅ Enrolamiento Exitoso</h3>
-                <ul>
-                    <li><b>ID Vacuno:</b> ${vacunoID}</li>
-                    <li><b>Caravana OCR:</b> ${caravana}</li>
-                    <li><b>ID Biométrico:</b> ${data.id_biometrico || 'Guardado'}</li>
-                </ul>
-            `;
-            matchCard.style.display = 'block';
-        } else {
-            alert(data.detail || "Error en el enrolamiento.");
+    document.getElementById('enrollForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnEnroll');
+        const matchCard = document.getElementById('matchCard');
+        
+        const morroFiles = document.getElementById('fotos_morro_enroll').files;
+        if (morroFiles.length < 1) {
+            alert("Por favor selecciona al menos 1 foto del morro.");
+            return;
         }
-    } catch (err) {
-        alert("Error de conexión con la API PIVAC.");
-        console.error(err);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Guardar Enrolamiento";
-    }
-});
 
+        btn.disabled = true;
+        btn.innerText = "Procesando enrolamiento...";
+        matchCard.style.display = 'none';
 
-    // IDENTIFICAR
-document.getElementById('identifyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnIdentify');
-    const matchCard = document.getElementById('matchCard');
-    btn.disabled = true;
-    btn.innerText = "Analizando patrón biométrico...";
-    matchCard.style.display = 'none';
+        const formData = new FormData();
+        formData.append('establecimiento_id', document.getElementById('establecimiento_id').value);
+        formData.append('id_vacuno', document.getElementById('id_vacuno').value);
+        formData.append('raza', document.getElementById('raza').value);
+        formData.append('latitude', currentLat);
+        formData.append('longitude', currentLon);
+        
+        for (let i = 0; i < morroFiles.length; i++) {
+            formData.append('fotos_morro', morroFiles[i]);
+        }
+        formData.append('foto_vaca', document.getElementById('foto_vaca_enroll').files[0]);
+        formData.append('foto_caravana', document.getElementById('foto_caravana_enroll').files[0]);
 
-    const formData = new FormData();
-    formData.append('foto_morro', document.getElementById('foto_morro_identify').files[0]);
-    formData.append('umbral_similitud', document.getElementById('umbral_similitud').value);
+        try {
+            const res = await fetch('/api/v1/enrolar', { method: 'POST', body: formData });
+            const data = await res.json();
 
-    try {
-        const res = await fetch('/api/v1/identificar', { method: 'POST', body: formData });
-        const data = await res.json();
-
-        if (res.ok) {
-            if (data.status === 'coincidencia_encontrada') {
-                const v = data.vacuno;
+            if (res.ok) {
                 matchCard.className = "match-card success";
                 matchCard.innerHTML = `
-                    <h3>🎯 Coincidencia Encontrada (${data.similitud_porcentaje}%)</h3>
-                    <ul>
-                        <li><b>ID Vacuno:</b> ${v.id_vacuno_interno || v.id}</li>
-                        <li><b>Establecimiento:</b> ${v.establecimiento_id}</li>
-                        <li><b>Número Caravana:</b> ${v.numero_caravana || 'Sin registrar'}</li>
-                        <li><b>Fecha Registro:</b> ${new Date(v.fecha_registro).toLocaleDateString()}</li>
-                    </ul>
+                    <h3>✅ Enrolamiento Exitoso</h3>
+                    <p><b>ID Vacuno:</b> ${data.id_vacuno}</p>
+                    <p><b>Caravana OCR:</b> ${data.caravana_ocr}</p>
+                    <p style="font-size:12px;">${data.message}</p>
                 `;
+                matchCard.style.display = 'block';
+                suggestNextVacunoID();
             } else {
-                // Captura defensiva de mensaje
-                const msg = data.message || `Máxima similitud hallada: ${data.similitud_maxima || 0}% (Umbral: ${data.umbral_exigido || 85}%)`;
-                matchCard.className = "match-card no-match";
-                matchCard.innerHTML = `
-                    <h3>❌ Sin Coincidencia</h3>
-                    <p style="margin: 6px 0; font-size: 13px;">${msg}</p>
-                `;
+                alert(data.detail || "Error en enrolamiento.");
             }
-            matchCard.style.display = 'block';
-        } else {
-            alert(data.detail || "Error en el servidor al procesar la imagen.");
+        } catch (err) {
+            alert("Error de conexión al enrolar.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Guardar Enrolamiento";
         }
-    } catch (err) {
-        alert("Error de conexión al intentar identificar.");
-        console.error(err);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Buscar Coincidencia";
-    }
-});
+    });
 
-    
-async function loadRegisteredDNI() {
+    // IDENTIFICAR
+    document.getElementById('identifyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnIdentify');
+        const matchCard = document.getElementById('matchCard');
+        btn.disabled = true;
+        btn.innerText = "Analizando patrón biométrico...";
+        matchCard.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('foto_morro', document.getElementById('foto_morro_identify').files[0]);
+        formData.append('umbral_similitud', document.getElementById('umbral_similitud').value);
+
+        try {
+            const res = await fetch('/api/v1/identificar', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (res.ok) {
+                if (data.status === 'coincidencia_encontrada') {
+                    const b = data.vacuno;
+                    matchCard.className = "match-card success"; 
+                    
+                    let morrosList = b.fotos_morros_b64 || [];
+                    if (!Array.isArray(morrosList) || morrosList.length === 0) {
+                        if (b.foto_morro_b64) morrosList = [b.foto_morro_b64];
+                    }
+                                    
+                    let morrosHTML = '';
+                    if (morrosList.length > 0) {
+                        morrosHTML = morrosList.map((mB64, idx) => 
+                            `<img src="${sanitizeB64(mB64)}" class="dni-morro-apaisado" title="Patrón Morro #${idx+1}" onerror="this.src=PLACEHOLDER_SVG">`
+                        ).join('');
+                    } else {
+                        morrosHTML = `<img src="${PLACEHOLDER_SVG}" class="dni-morro-apaisado" title="Sin Morro Registrado">`;
+                    }
+
+                    const estabNombre = b.establecimiento_nombre || b.id_establecimiento || 'N/A';
+                    const vacunoID = b.id_vacuno_interno || b.id_vacuno || 'S/ID';
+                    const idBio = b.id_biometrico || b.id || 'N/A';
+
+                    matchCard.innerHTML = `
+                        <h3>🎯 Coincidencia Encontrada (${data.similitud_porcentaje}%)</h3>
+                        <div class="dni-card" style="margin-top:10px;">
+                            <div class="dni-header">
+                                <h4>🇦🇷 REPÚBLICA ARGENTINA - PIVAC</h4>
+                                <span>DNI BOVINO</span>
+                            </div>
+                            <div class="dni-body">   
+                                <div class="dni-photos-left">
+                                    <img src="${sanitizeB64(b.foto_vaca_b64)}" class="dni-thumb-left" title="Cuerpo / Vaca" onerror="this.src=PLACEHOLDER_SVG">
+                                    <img src="${sanitizeB64(b.foto_cara_b64)}" class="dni-thumb-left" title="Caravana OCR" onerror="this.src=PLACEHOLDER_SVG">
+                                </div>
+                                <div class="dni-details">
+                                    <div class="dni-field">
+                                        <span class="dni-label">ID Vacuno / Caravana</span>
+                                        <span class="dni-val">VAC: ${vacunoID} | CARAVANA: ${b.numero_caravana || 'S/N'}</span>
+                                    </div>
+                                    <div class="dni-field">
+                                        <span class="dni-label">Raza</span>
+                                        <span class="dni-val">${b.raza || 'Angus'}</span>
+                                    </div>
+                                    <div class="dni-field">
+                                        <span class="dni-label">Establecimiento</span>
+                                        <span class="dni-val">${estabNombre}</span>
+                                    </div>
+                                    <div class="dni-field">
+                                        <span class="dni-label">ID Biométrico (UUID)</span>
+                                        <span class="dni-id-bio">${idBio}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dni-morros-footer">
+                                <span class="dni-morros-label">🟢 Huellas Nasales Registradas en Base de Datos:</span>
+                                <div class="dni-morros-container">
+                                    ${morrosHTML}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${data.foto_comparacion_b64 ? `
+                            <div style="margin-top:12px; text-align:center;">
+                                <span style="font-size:11px; font-weight:bold; color:#1b5e20;">MATCH VISUAL 1 A 1:</span>
+                                <img src="${sanitizeB64(data.foto_comparacion_b64)}" style="width:100%; border-radius:8px; border:1px solid #2e7d32; margin-top:4px;" onerror="this.src=PLACEHOLDER_SVG" />
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    matchCard.className = "match-card no-match";
+                    matchCard.innerHTML = `
+                        <h3>❌ Sin Coincidencia</h3>
+                        <p style="margin: 6px 0; font-size: 13px;">${data.message}</p>
+                    `;
+                }
+                matchCard.style.display = 'block';
+            } else {
+                alert(data.detail || "Error en el servidor al procesar la imagen.");
+            }
+        } catch (err) {
+            console.error("Error en identificación:", err); 
+            alert("Error de conexión al intentar identificar.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Buscar Coincidencia";
+        }
+    });
+
+    // LOAD REGISTRADOS
+    async function loadRegisteredDNI() {
         const container = document.getElementById('dniListContainer');
-        container.innerHTML = "Cargando registros...";
+        container.innerHTML = "Cargando registros de la base de datos...";
 
         try {
             const res = await fetch('/api/v1/registrados');
-            const data = await res.json();
-
-            if (!data.bovinos || data.bovinos.length === 0) {
-                container.innerHTML = "<p style='text-align:center;'>No hay bovinos registrados aún.</p>";
+            if (!res.ok) {
+                const errData = await res.json();
+                container.innerHTML = `<p style="color:red; text-align:center;">Error ${res.status}: ${errData.detail || 'No se pudieron consultar los bovinos.'}</p>`;
                 return;
             }
 
-            container.innerHTML = data.bovinos.map(b => `
-                <div class="dni-card">
-                    <div class="dni-header">
-                        <h4>🇦🇷 REPÚBLICA ARGENTINA - PIVAC</h4>
-                        <span>DNI BOVINO</span>
-                    </div>
-                    <div class="dni-body">
-                        <div class="dni-photos">
-                            <img src="${b.foto_morro_b64 || '/static/placeholder.jpg'}" class="dni-thumb" title="Huella Nasal (Morro)">
-                            <img src="${b.foto_cara_b64 || '/static/placeholder.jpg'}" class="dni-thumb" title="Rostro / Caravana">
+            const data = await res.json();
+            if (!data.bovinos || data.bovinos.length === 0) {
+                container.innerHTML = "<p style='text-align:center;'>No hay bovinos registrados aún en la base de datos.</p>";
+                return;
+            }
+
+            container.innerHTML = data.bovinos.map(b => {
+                const vacunoID = b.id_vacuno_interno || b.id_vacuno || 'S/ID';
+                const caravana = b.numero_caravana || 'S/N';
+                const estab = b.id_establecimiento || b.establecimiento_nombre || 'N/A';
+                const raza = b.raza || 'Angus';
+                const idBio = b.id_biometrico || b.id || 'N/A';
+
+                let morrosHTML = '';
+                if (Array.isArray(b.fotos_morros_b64) && b.fotos_morros_b64.length > 0) {
+                    morrosHTML = b.fotos_morros_b64.map((mB64, idx) => 
+                        `<img src="${sanitizeB64(mB64)}" class="dni-morro-apaisado" title="Patrón Morro #${idx+1}" onerror="this.src=PLACEHOLDER_SVG">`
+                    ).join('');
+                } else if (b.foto_morro_b64) {
+                    morrosHTML = `<img src="${sanitizeB64(b.foto_morro_b64)}" class="dni-morro-apaisado" title="Patrón Biométrico Morro" onerror="this.src=PLACEHOLDER_SVG">`;
+                } else {
+                    morrosHTML = `<img src="${PLACEHOLDER_SVG}" class="dni-morro-apaisado" title="Sin Morro Registrado">`;
+                }
+
+                return `
+                    <div class="dni-card" id="dni-card-${idBio}">
+                        <div class="dni-header">
+                            <div>
+                                <h4>🇦🇷 REPÚBLICA ARGENTINA - PIVAC</h4>
+                                <span>DNI BOVINO</span>
+                            </div>
+                            <button class="btn-delete-dni" onclick="deleteBovino('${idBio}', '${vacunoID}')" title="Eliminar este bovino">
+                                🗑️ Eliminar
+                            </button>
                         </div>
-                        <div class="dni-details">
-                            <div class="dni-field">
-                                <span class="dni-label">ID Vacuno / Caravana</span>
-                                <span class="dni-val">VAC: ${b.id_vacuno_interno} | CARAVANA: ${b.numero_caravana || 'S/N'}</span>
+                        <div class="dni-body">
+                            <div class="dni-photos-left">
+                                <img src="${sanitizeB64(b.foto_vaca_b64)}" class="dni-thumb-left" title="Cuerpo / Vaca" onerror="this.src=PLACEHOLDER_SVG">
+                                <img src="${sanitizeB64(b.foto_cara_b64)}" class="dni-thumb-left" title="Caravana OCR" onerror="this.src=PLACEHOLDER_SVG">
                             </div>
-                            <div class="dni-field">
-                                <span class="dni-label">Raza</span>
-                                <span class="dni-val">${b.raza || 'Angus'}</span>
+                            <div class="dni-details">
+                                <div class="dni-field">
+                                    <span class="dni-label">ID Vacuno / Caravana</span>
+                                    <span class="dni-val">VAC: ${vacunoID} | CARAVANA: ${caravana}</span>
+                                </div>
+                                <div class="dni-field">
+                                    <span class="dni-label">Raza</span>
+                                    <span class="dni-val">${raza}</span>
+                                </div>
+                                <div class="dni-field">
+                                    <span class="dni-label">Establecimiento</span>
+                                    <span class="dni-val">${estab}</span>
+                                </div>
+                                <div class="dni-field">
+                                    <span class="dni-label">ID Biométrico (UUID)</span>
+                                    <span class="dni-id-bio">${idBio}</span>
+                                </div>
                             </div>
-                            <div class="dni-field">
-                                <span class="dni-label">Establecimiento</span>
-                                <span class="dni-val">${b.establecimiento_nombre || 'Estancia Las Sierras'}</span>
-                            </div>
-                            <div class="dni-field">
-                                <span class="dni-label">ID Biométrico (UUID)</span>
-                                <span class="dni-id-bio">${b.id_biometrico}</span>
+                        </div>
+                        <div class="dni-morros-footer">
+                            <span class="dni-morros-label">🟢 Huellas Nasales Registradas:</span>
+                            <div class="dni-morros-container">
+                                ${morrosHTML}
                             </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+
         } catch (err) {
-            container.innerHTML = "<p>Error al cargar el listado de DNI Bovinos.</p>";
+            console.error("Error al cargar registrados:", err);
+            container.innerHTML = "<p style='color:red; text-align:center;'>Error de conexión al cargar listado.</p>";
+        }
+    }
+
+    async function deleteBovino(idBiometrico, idVacuno) {
+        if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente el registro '${idVacuno}'?`)) return;
+        try {
+            const res = await fetch(`/api/v1/bovinos/${idBiometrico}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert(`✅ Bovino '${idVacuno}' eliminado correctamente.`);
+                loadRegisteredDNI();
+            } else {
+                const data = await res.json();
+                alert(`❌ Error al eliminar: ${data.detail || 'No se pudo completar la operación.'}`);
+            }
+        } catch (err) {
+            alert("⚠️ Error de conexión con el servidor al intentar eliminar.");
         }
     }
 </script>
